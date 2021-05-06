@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,6 +20,22 @@ func StructFromValue(tmpl interface{}, value interface{}) (interface{}, error) {
 	}
 	return StructFromJSON(tmpl, jsonValue)
 } //StructFromValue()
+
+func StructFromJSONReader(tmpl interface{}, reader io.Reader) (interface{}, error) {
+	structPtrValue, _, err := newStruct(tmpl)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.NewDecoder(reader).Decode(structPtrValue.Interface()); err != nil {
+		return nil, fmt.Errorf("cannot parse JSON into %T: %v", tmpl, err)
+	}
+	if validator, ok := structPtrValue.Interface().(IValidator); ok {
+		if err := validator.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid: %v", err)
+		}
+	}
+	return tmplStruct(tmpl, structPtrValue)
+}
 
 func StructFromJSON(tmpl interface{}, jsonData []byte) (interface{}, error) {
 	structPtrValue, _, err := newStruct(tmpl)
