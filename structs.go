@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-type IValidator interface {
-	Validate() error
-}
-
 func StructFromValue(tmpl interface{}, value interface{}) (interface{}, error) {
 	jsonValue, err := json.Marshal(value)
 	if err != nil {
@@ -29,11 +25,6 @@ func StructFromJSONReader(tmpl interface{}, reader io.Reader) (interface{}, erro
 	if err := json.NewDecoder(reader).Decode(structPtrValue.Interface()); err != nil {
 		return nil, fmt.Errorf("cannot parse JSON into %T: %v", tmpl, err)
 	}
-	if validator, ok := structPtrValue.Interface().(IValidator); ok {
-		if err := validator.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid: %v", err)
-		}
-	}
 	return tmplStruct(tmpl, structPtrValue)
 }
 
@@ -44,11 +35,6 @@ func StructFromJSON(tmpl interface{}, jsonData []byte) (interface{}, error) {
 	}
 	if err := json.Unmarshal(jsonData, structPtrValue.Interface()); err != nil {
 		return nil, fmt.Errorf("cannot parse JSON into %T: %v", tmpl, err)
-	}
-	if validator, ok := structPtrValue.Interface().(IValidator); ok {
-		if err := validator.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid: %v", err)
-		}
 	}
 	return tmplStruct(tmpl, structPtrValue)
 } //StructFromJSON()
@@ -148,7 +134,6 @@ func StructFromMap(tmpl interface{}, obj map[string]interface{}) (interface{}, e
 //params:
 //	tmpl is your template struct or ptr to struct, whichever type you want returned
 //	the data in tmpl will be copied before parsing, so can define default values
-//	if tmpl implements IValidator, the parsed data will be validated
 //return:
 //	structPtrValue is value of &yourStruct
 //	structType is type of struct, always with kind=struct
