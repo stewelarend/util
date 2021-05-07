@@ -39,6 +39,25 @@ func StructFromJSON(tmpl interface{}, jsonData []byte) (interface{}, error) {
 	return tmplStruct(tmpl, structPtrValue)
 } //StructFromJSON()
 
+type IDecoder interface {
+	Decode(data []byte) error
+}
+
+func StructDecode(tmpl IDecoder, data []byte) (interface{}, error) {
+	structPtrValue, _, err := newStruct(tmpl)
+	if err != nil {
+		return nil, err
+	}
+	newStruct, ok := structPtrValue.Interface().(IDecoder)
+	if !ok {
+		return nil, fmt.Errorf("%T.Decode() not supported", tmpl)
+	}
+	if err := newStruct.Decode(data); err != nil {
+		return nil, fmt.Errorf("failed to decode into %T: %v", tmpl, err)
+	}
+	return tmplStruct(tmpl, structPtrValue)
+}
+
 //in URL, values are always []string even when only one string or when int etc
 //in other objects you may have float storing 1.0 and struct expects int
 //this function tries to parse the values into the desired struct field types
@@ -153,14 +172,13 @@ func newStruct(tmpl interface{}) (structPtrValue reflect.Value, structType refle
 		}
 		structType = tmplType.Elem()
 		structPtrValue = reflect.New(structType)
+		structPtrValue.Elem().Set(reflect.ValueOf(tmpl).Elem())
 	case reflect.Struct:
 		structPtrValue = reflect.New(structType)
+		structPtrValue.Elem().Set(reflect.ValueOf(tmpl))
 	default:
 		return reflect.ValueOf(nil), reflect.TypeOf(nil), fmt.Errorf("%T is not a struct", tmpl)
 	}
-
-	//copy value of tmpl to the new struct (as default field values) before we start parsing
-	structPtrValue.Elem().Set(reflect.ValueOf(tmpl))
 	return structPtrValue, structType, nil
 } //newStruct()
 
