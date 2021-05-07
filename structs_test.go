@@ -16,11 +16,11 @@ func TestDecoder(t *testing.T) {
 	}
 	data := a.Encode()
 
-	_b, err := util.StructDecode(&MyStruct{}, data)
+	_b, err := util.StructDecode(MyStruct{}, data)
 	if err != nil {
 		t.Fatalf("failed to decode")
 	}
-	b := _b.(*MyStruct)
+	b := _b.(MyStruct)
 	if b.Name != a.Name || b.Age != a.Age {
 		t.Fatalf("%+v != %+v", a, b)
 	}
@@ -32,12 +32,13 @@ type MyStruct struct {
 	Age  int
 }
 
-func (d *MyStruct) Decode(data []byte) error {
+func (d MyStruct) Decode(data []byte) (util.IDecoder, error) {
 	part := strings.SplitN(string(data), ",", 2)
 	d.Name = part[0]
 	age, _ := strconv.ParseInt(part[1], 10, 64)
 	d.Age = int(age)
-	return nil
+	fmt.Printf("Decoded %+v\n", d)
+	return d, nil
 }
 
 func (d MyStruct) Encode() []byte {

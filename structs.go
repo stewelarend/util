@@ -40,7 +40,7 @@ func StructFromJSON(tmpl interface{}, jsonData []byte) (interface{}, error) {
 } //StructFromJSON()
 
 type IDecoder interface {
-	Decode(data []byte) error
+	Decode(data []byte) (IDecoder, error)
 }
 
 func StructDecode(tmpl IDecoder, data []byte) (interface{}, error) {
@@ -52,10 +52,11 @@ func StructDecode(tmpl IDecoder, data []byte) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("%T.Decode() not supported", tmpl)
 	}
-	if err := newStruct.Decode(data); err != nil {
+	newStruct, err = newStruct.Decode(data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to decode into %T: %v", tmpl, err)
 	}
-	return tmplStruct(tmpl, structPtrValue)
+	return newStruct, nil //tmplStruct(tmpl, structPtrValue)
 }
 
 //in URL, values are always []string even when only one string or when int etc
